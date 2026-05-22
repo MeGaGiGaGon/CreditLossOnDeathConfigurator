@@ -18,7 +18,7 @@ namespace CreditLossOnDeathConfigurator
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "GiGaGon";
         public const string PluginName = "CreditLossOnDeathConfigurator";
-        public const string PluginVersion = "1.0.3";
+        public const string PluginVersion = "1.0.4";
         private static ILHook _hook = null!;
         public static ConfigFile configFile = null!;
         public static ConfigEntry<float> creditPercentageLostPerUnrecoveredBody = null!;

@@ -1,6 +1,6 @@
 {
     "name": "CreditLossOnDeathConfigurator",
-    "version_number": "1.0.3",
+    "version_number": "1.0.4",
     "website_url": "https://github.com/MeGaGiGaGon/CreditLossOnDeathConfigurator",
     "description": "Configure credit loss on player death. Also updates end screen percentage to include loss from recovered bodies. Config changes apply instantly. Also allows scaling credit loss on lobby size and disabling credit loss at the company.",
     "dependencies": [
