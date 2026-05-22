@@ -5,6 +5,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -45,73 +46,90 @@ namespace CreditLossOnDeathConfigurator
         public void SetBodyCreditReductionMultipliers(ILContext il)
         {
             ILCursor c = new ILCursor(il);
-            // orig code: float num = 0.2f;
-            // replaces:              ^^^^
-            c.GotoNext(
-                x => x.MatchLdcR4(0.2f),
-                x => x.MatchStloc(0)
-            );
-            c.Remove();
-            c.EmitDelegate<Func<float>>(() =>
+            try // Lategame_Upgrades also patches this, so let them handle it if they load first
             {
-                configFile.Reload();
-                if (disableCreditLossAtCompany.Value && StartOfRound.Instance.currentLevel.sceneName == "CompanyBuilding")
+                // orig code: float num = 0.2f;
+                // replaces:              ^^^^
+                c.GotoNext(
+                    x => x.MatchLdcR4(0.2f),
+                    x => x.MatchStloc(0)
+                );
+                c.Remove();
+                c.EmitDelegate<Func<float>>(() =>
                 {
-                    return 0f;
-                }
-                else if (scaleCreditLossByLobbySize.Value)
-                {
-                    return creditPercentageLostPerUnrecoveredBody.Value * (4f / ((float)StartOfRound.Instance.connectedPlayersAmount + 1f));
-                }
-                else
-                {
-                    return creditPercentageLostPerUnrecoveredBody.Value;
-                }
-            });
-            
-            // orig code: terminal.groupCredits -= (int)((float)groupCredits * (num / 2.5f));
-            // replaces:                                                       ^^^^^^^^^^^^
-            c.GotoNext(
-                x => x.MatchLdloc(2),
-                x => x.MatchConvR4(),
-                x => x.MatchLdloc(0),
-                x => x.MatchLdcR4(2.5f)
-            );
-            c.Index += 2;
-            c.RemoveRange(3);
-            c.EmitDelegate<Func<float>>(() =>
+                    configFile.Reload();
+                    if (disableCreditLossAtCompany.Value && StartOfRound.Instance.currentLevel.sceneName == "CompanyBuilding")
+                    {
+                        return 0f;
+                    }
+                    else if (scaleCreditLossByLobbySize.Value)
+                    {
+                        return creditPercentageLostPerUnrecoveredBody.Value * (4f / ((float)StartOfRound.Instance.connectedPlayersAmount + 1f));
+                    }
+                    else
+                    {
+                        return creditPercentageLostPerUnrecoveredBody.Value;
+                    }
+                });
+            } catch (KeyNotFoundException)
             {
-                if (disableCreditLossAtCompany.Value && StartOfRound.Instance.currentLevel.sceneName == "CompanyBuilding")
+                Debug.LogError("CreditLossOnDeathConfigurator - A different mod already patched unrecovered body percentage, config will not apply");
+            }
+
+            try // I'm not aware of any issues here but just in case to prevent a full crash
+            { 
+                // orig code: terminal.groupCredits -= (int)((float)groupCredits * (num / 2.5f));
+                // replaces:                                                       ^^^^^^^^^^^^
+                c.GotoNext(
+                    x => x.MatchLdloc(2),
+                    x => x.MatchConvR4(),
+                    x => x.MatchLdloc(0),
+                    x => x.MatchLdcR4(2.5f)
+                );
+                c.Index += 2;
+                c.RemoveRange(3);
+                c.EmitDelegate<Func<float>>(() =>
                 {
-                    return 0f;
-                }
-                else if (scaleCreditLossByLobbySize.Value)
-                {
-                    return creditPercentageLostPerRecoveredBody.Value * (4f / ((float)StartOfRound.Instance.connectedPlayersAmount + 1f));
-                } 
-                else
-                {
-                    return creditPercentageLostPerRecoveredBody.Value;
-                }
-            });
-            
-            // orig code: statsUIElements.penaltyAddition.text = $"{playersDead} casualties: -{num * 100f * (float)(playersDead - bodiesInsured)}%\n({bodiesInsured} bodies recovered)";
-            // replaces:                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            c.GotoNext(
-                x => x.MatchLdarg(1),
-                x => x.MatchBox<int>(),
-                x => x.MatchLdloc(0)
-            );
-            c.Index += 2;
-            c.RemoveRange(8);
-            c.Emit(OpCodes.Ldloc_2);
-            c.EmitDelegate<Func<int, float>>((groupCredits) =>
+                    if (disableCreditLossAtCompany.Value && StartOfRound.Instance.currentLevel.sceneName == "CompanyBuilding")
+                    {
+                        return 0f;
+                    }
+                    else if (scaleCreditLossByLobbySize.Value)
+                    {
+                        return creditPercentageLostPerRecoveredBody.Value * (4f / ((float)StartOfRound.Instance.connectedPlayersAmount + 1f));
+                    }
+                    else
+                    {
+                        return creditPercentageLostPerRecoveredBody.Value;
+                    }
+                });
+            } catch (KeyNotFoundException)
             {
-                var result = 100f * (1f - ((float)FindAnyObjectByType<Terminal>().groupCredits / (float)groupCredits));
-                result = Math.Clamp(result, 0f, 100f);
-                return float.IsNaN(result) ? 0f : result;
-            });
-            Debug.Log(il.ToString());
+                Debug.LogError("CreditLossOnDeathConfigurator - A different mod already patched recovered body percentage, config will not apply");
+            }
+
+            try // I'm not aware of any issues here but just in case to prevent a full crash
+            { 
+                  // orig code: statsUIElements.penaltyAddition.text = $"{playersDead} casualties: -{num * 100f * (float)(playersDead - bodiesInsured)}%\n({bodiesInsured} bodies recovered)";
+                  // replaces:                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    c.GotoNext(
+                    x => x.MatchLdarg(1),
+                    x => x.MatchBox<int>(),
+                    x => x.MatchLdloc(0)
+                );
+                c.Index += 2;
+                c.RemoveRange(8);
+                c.Emit(OpCodes.Ldloc_2);
+                c.EmitDelegate<Func<int, float>>((groupCredits) =>
+                {
+                    var result = 100f * (1f - ((float)FindAnyObjectByType<Terminal>().groupCredits / (float)groupCredits));
+                    result = Math.Clamp(result, 0f, 100f);
+                    return float.IsNaN(result) ? 0f : result;
+                });
+            } catch (KeyNotFoundException)
+            {
+                Debug.LogError("CreditLossOnDeathConfigurator - A different mod already patched credit penalty percentage text");
+            }
         }
     }
 }

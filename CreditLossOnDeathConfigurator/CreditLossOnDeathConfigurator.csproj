@@ -22,8 +22,24 @@
 		<Reference Include="Assembly-CSharp" Publicize="true">
 			<HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Assembly-CSharp.dll</HintPath>
 		</Reference>
+		<Reference Include="Mono.Cecil">
+		  <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\Mono.Cecil.dll</HintPath>
+		</Reference>
+		<Reference Include="MonoMod.RuntimeDetour">
+		  <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath>
+		</Reference>
+		<Reference Include="MonoMod.Utils">
+		  <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\MonoMod.Utils.dll</HintPath>
+		</Reference>
 		<Reference Include="Unity.Netcode.Runtime" Publicize="true">
 			<HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Netcode.Runtime.dll</HintPath>
 		</Reference>
 	</ItemGroup>
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<Exec Command="echo $(OutDir)&#xD;&#xA;echo $(ProjectDir)&#xD;&#xA;echo $(AssemblyName)&#xD;&#xA;echo $(ProjectDir)$(OutDir)$(AssemblyName)" />
+	</Target>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="copy /y $(ProjectDir)$(OutDir)$(AssemblyName).dll $(ProjectDir)..\Thunderstore" />
+	</Target>
 </Project>
