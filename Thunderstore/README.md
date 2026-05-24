@@ -11,6 +11,9 @@ Note that the percentage lost shown is exact, so it may be slightly off due to r
 If anything breaks, feel free to DM me on discord at `gigagon`
 
 # Changelog
+V 1.0.5
+- Added rounding on displayed credit loss percentage (can be disabled in config if you liked the old behavior)
+
 V 1.0.4
 - Added missing dependancy on HookGenPatcher
 - Made mod not crash if another mod gets to the hooks first (Known: `Lategame_Upgrades`)

@@ -18,13 +18,14 @@ namespace CreditLossOnDeathConfigurator
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "GiGaGon";
         public const string PluginName = "CreditLossOnDeathConfigurator";
-        public const string PluginVersion = "1.0.4";
+        public const string PluginVersion = "1.0.5";
         private static ILHook _hook = null!;
         public static ConfigFile configFile = null!;
         public static ConfigEntry<float> creditPercentageLostPerUnrecoveredBody = null!;
         public static ConfigEntry<float> creditPercentageLostPerRecoveredBody   = null!;
         public static ConfigEntry<bool>  disableCreditLossAtCompany             = null!;
         public static ConfigEntry<bool>  scaleCreditLossByLobbySize             = null!;
+        public static ConfigEntry<bool>  roundCreditLossPercentage              = null!;
         private void Awake()
         {
             configFile = new ConfigFile(Path.Combine(Paths.ConfigPath, $"{PluginName}.cfg"), true);
@@ -32,6 +33,7 @@ namespace CreditLossOnDeathConfigurator
             creditPercentageLostPerRecoveredBody   = configFile.Bind("General", "Credit Percentage Lost Per Recovered Body",   0.08f, "By default 8% is lost on recovered bodies, though in vanilla it is not stated nor displayed on the end card.");
             disableCreditLossAtCompany             = configFile.Bind("General", "Disable Credit Loss At Company",              false, "Stops all credit loss from recovered/unrecovered bodies while at the company.");
             scaleCreditLossByLobbySize             = configFile.Bind("General", "Scale Credit Loss By Lobby Size",             false, "Scales based on a 4 player lobby to make it so that if all players die, the credit loss is the same accross all sizes.\nExample: 4 player lobby with 20% unrecovered, max is 20% * 4 = 80%. \nA five player lobby would be 20% * 4 (base max) / 5 (max unrecoverable) = 16% per body, since 16% * 5 = 80%. \nA 3 player lobby would be 20% * 4 / 3 = 26% per.\nThe same math applies to the recovered body percentage.");
+            roundCreditLossPercentage              = configFile.Bind("General", "Round Credit Loss Percentage",                true,  "If enabled, will round the displayed Credit Loss percent up to the nearest whole number to prevent confusion. Disable if you liked the old fully accurate display.");
 
             _hook = new ILHook(
                 typeof(HUDManager).GetMethod("ApplyPenalty", BindingFlags.Instance | BindingFlags.Public), 
@@ -122,9 +124,15 @@ namespace CreditLossOnDeathConfigurator
                 c.Emit(OpCodes.Ldloc_2);
                 c.EmitDelegate<Func<int, float>>((groupCredits) =>
                 {
+                    configFile.Reload();
                     var result = 100f * (1f - ((float)FindAnyObjectByType<Terminal>().groupCredits / (float)groupCredits));
                     result = Math.Clamp(result, 0f, 100f);
-                    return float.IsNaN(result) ? 0f : result;
+                    result = float.IsNaN(result) ? 0f : result;
+                    if (roundCreditLossPercentage.Value)
+                    {
+                        result = (float)Math.Ceiling(result);
+                    }
+                    return result;
                 });
             } catch (KeyNotFoundException)
             {
